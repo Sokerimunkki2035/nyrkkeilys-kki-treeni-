@@ -97,5 +97,529 @@
 
     .toggle-btn {
       flex: 1;
-      padding: 
-      
+      padding: 12px;
+      background-color: #2a2a2a;
+      border: 2px solid #333;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .toggle-btn.active {
+      border-color: var(--accent);
+      background-color: rgba(229, 57, 53, 0.2);
+    }
+
+    .timer-box {
+      text-align: center;
+      padding: 24px 16px;
+      border-radius: 16px;
+      background-color: var(--card);
+      border: 3px solid #333;
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+
+    .timer-box.work {
+      border-color: var(--accent);
+      background-color: rgba(229, 57, 53, 0.12);
+    }
+
+    .timer-box.rest {
+      border-color: var(--rest);
+      background-color: rgba(46, 125, 50, 0.15);
+    }
+
+    .timer-box.prep {
+      border-color: var(--prep);
+      background-color: rgba(245, 124, 0, 0.15);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background-color: #333;
+      margin-bottom: 10px;
+    }
+
+    .work .status-badge { background-color: var(--accent); }
+    .rest .status-badge { background-color: var(--rest); }
+    .prep .status-badge { background-color: var(--prep); color: #000; }
+
+    .time-display {
+      font-size: 4.5rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+      margin: 8px 0;
+    }
+
+    .round-info {
+      font-size: 1.1rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .combo-box {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #333;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .combo-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+
+    .combo-desc {
+      font-size: 1.05rem;
+      color: #cccccc;
+      line-height: 1.4;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      border: none;
+      font-weight: bold;
+      font-size: 1.2rem;
+      padding: 16px;
+    }
+
+    .btn-secondary {
+      background-color: #333;
+      border: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      padding: 16px;
+    }
+
+    .guide-list {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #ddd;
+    }
+
+    .guide-list li {
+      margin-bottom: 8px;
+      margin-left: 18px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🥊 Säkkitreeni Valmentaja</h1>
+    <p>Selkokielinen ohjaaja aloittelijalle</p>
+  </header>
+
+  <div id="setup-panel" class="card settings-grid">
+    <div>
+      <label>1. Valitse harjoitusohjelma</label>
+      <select id="program-select">
+        <option value="1">Taso 1: Peruslyönnit haltuun (3 × 2 min)</option>
+        <option value="2">Taso 2: Koukut mukaan (4 × 2 min)</option>
+        <option value="3">Taso 3: Koko paketti & kohokoukut (5 × 2 min)</option>
+      </select>
+    </div>
+
+    <div>
+      <label>2. Kumpi on vahvempi kätesi?</label>
+      <div class="toggle-row">
+        <button type="button" class="toggle-btn active" id="stance-ortho" onclick="setStance('ortho')">Oikeakätinen<br><small style="font-weight:normal;color:#bbb">(Vasen edessä)</small></button>
+        <button type="button" class="toggle-btn" id="stance-south" onclick="setStance('south')">Vasenkätinen<br><small style="font-weight:normal;color:#bbb">(Oikea edessä)</small></button>
+      </div>
+    </div>
+
+    <div>
+      <label>3. Ääniopastus (Suomenkielinen puhe)</label>
+      <div class="toggle-row">
+        <button type="button" class="toggle-btn active" id="voice-on" onclick="setVoice(true)">🔊 Puhe PÄÄLLÄ</button>
+        <button type="button" class="toggle-btn" id="voice-off" onclick="setVoice(false)">🔇 Vain merkkiäänet</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn-primary" onclick="startWorkout()">▶ ALOITA TREENI</button>
+  </div>
+
+  <div id="workout-panel" class="hidden">
+    <div id="timer-box" class="timer-box prep">
+      <div id="status-badge" class="status-badge">VALMISTAUDU</div>
+      <div id="time-display" class="time-display">00:10</div>
+      <div id="round-info" class="round-info">Erä 1 / 3</div>
+
+      <div class="combo-box">
+        <div id="combo-title" class="combo-title">Laita hanskat valmiiksi</div>
+        <div id="combo-desc" class="combo-desc">Ota tukeva haaroma-asento. Pidä ranne suorana ja kädet suojana.</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button type="button" class="btn-secondary" id="pause-btn" onclick="togglePause()">⏸ Tauko</button>
+      <button type="button" class="btn-secondary" onclick="stopWorkout()">⏹ Lopeta</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label style="color:#fff; font-size:1rem; margin-bottom:10px;">📋 Pikamuistio käsille ja asennolle:</label>
+    <ul class="guide-list" id="quick-guide"></ul>
+  </div>
+</div>
+
+<script>
+  let stance = 'ortho';
+  let voiceEnabled = true;
+  let timerInterval = null;
+  let isPaused = false;
+  let wakeLock = null;
+
+  let currentProgram = null;
+  let currentRound = 1;
+  let totalRounds = 3;
+  let roundDuration = 120;
+  let restDuration = 60;
+  let phase = 'prep';
+  let timeLeft = 10;
+  let lastComboIndex = -1;
+
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playBell(type = 'start') {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'start') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(620, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(310, audioCtx.currentTime + 0.8);
+      gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.8);
+    } else if (type === 'end') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.5);
+    } else if (type === 'tick') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
+    }
+  }
+
+  function speak(text) {
+    if (!voiceEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fi-FI';
+    utterance.rate = 0.98;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function setStance(newStance) {
+    stance = newStance;
+    document.getElementById('stance-ortho').classList.toggle('active', stance === 'ortho');
+    document.getElementById('stance-south').classList.toggle('active', stance === 'south');
+    updateQuickGuide();
+  }
+
+  function setVoice(enabled) {
+    voiceEnabled = enabled;
+    document.getElementById('voice-on').classList.toggle('active', voiceEnabled);
+    document.getElementById('voice-off').classList.toggle('active', !voiceEnabled);
+    if (voiceEnabled) speak("Ääniopastus päällä.");
+  }
+
+  function getHandNames() {
+    if (stance === 'ortho') {
+      return { lead: 'Vasen', leadLower: 'vasen', rear: 'Oikea', rearLower: 'oikea' };
+    } else {
+      return { lead: 'Oikea', leadLower: 'oikea', rear: 'Vasen', rearLower: 'vasen' };
+    }
+  }
+
+  function updateQuickGuide() {
+    const h = getHandNames();
+    const list = document.getElementById('quick-guide');
+    list.innerHTML = `
+      <li><strong>Perusasento:</strong> ${h.lead} jalka ja ${h.leadLower} käsi edessä, ${h.rearLower} jalka taaempana. Pidä ranne suorana osumahetkellä!</li>
+      <li><strong>Etukäden suora (${h.lead}):</strong> Nopea pisto eteenpäin ja käsi heti takaisin poskelle.</li>
+      <li><strong>Takakäden suora (${h.rear}):</strong> Kierrä takajalan päkiää ja lantiota mukaan.</li>
+      <li><strong>Koukku & kohokoukku:</strong> Matala säkki sopii täydellisesti vartalokoukkuihin ja alhaalta ylös tuleviin kohokoukkuihin.</li>
+      <li><strong>Hengitys:</strong> Puhalla ilmaa ulos joka lyönnillä (<em>"tsuh!"</em>).</li>
+    `;
+  }
+
+  function getPrograms() {
+    const h = getHandNames();
+    return {
+      1: {
+        rounds: 3,
+        workSec: 120,
+        restSec: 60,
+        intervalSec: 12,
+        roundsData: [
+          [
+            { speak: `${h.lead} suora!`, title: `${h.lead} suora`, desc: `Lyö nopea suora etukädellä (${h.leadLower}) ja palauta käsi heti suojaan.` },
+            { speak: `Kaksi kertaa ${h.leadLower} suora!`, title: `${h.lead} + ${h.lead} suora`, desc: `Kaksi terävää etukäden suoraa peräkkäin. Hengitä ulos!` },
+            { speak: `${h.lead} suora, ja liiku sivulle!`, title: `${h.lead} suora + liike`, desc: `Lyö ${h.leadLower} suora ja ota askel sivulle.` }
+          ],
+          [
+            { speak: `${h.lead}, ${h.rear}!`, title: `${h.lead} suora + ${h.rear} suora`, desc: `Perusyhdistelmä: ${h.leadLower} suora ja heti perään ${h.rearLower} suora.` },
+            { speak: `Pelkkä ${h.rearLower} suora, kierrä lantiota!`, title: `${h.rear} suora`, desc: `Kierrä takajalan päkiää ja työnnä ${h.rearLower} suora kohteeseen.` },
+            { speak: `${h.lead}, ${h.rear}, ja suojaus ylös!`, title: `${h.lead} + ${h.rear} + suojaus`, desc: `Kaksi suoraa ja kädet tiukasti takaisin poskille.` }
+          ],
+          [
+            { speak: `${h.lead}, ${h.rear}, ${h.lead}!`, title: `${h.lead} + ${h.rear} + ${h.lead}`, desc: `Kolme suoraa rytmillä: pam, pam, pam!` },
+            { speak: `${h.lead}, ${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.lead} + ${h.rear}`, desc: `Kaksi nopeaa etukäden suoraa ja ${h.rearLower} perään.` },
+            { speak: `Rauhallinen tempo, pidä ranne suorana!`, title: `${h.lead} + ${h.rear} (tekniikka)`, desc: `Keskity puhtaaseen osumaan ja ranteen suoruuteen.` }
+          ]
+        ]
+      },
+      2: {
+        rounds: 4,
+        workSec: 120,
+        restSec: 60,
+        intervalSec: 11,
+        roundsData: [
+          [
+            { speak: `${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.rear} suora`, desc: `Rento aloitus: ${h.leadLower} ja ${h.rearLower} suora.` },
+            { speak: `${h.lead}, ${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.lead} + ${h.rear}`, desc: `Kaksi etukäden suoraa ja takakäden suora.` }
+          ],
+          [
+            { speak: `${h.lead} koukku keskelle!`, title: `${h.lead} koukku`, desc: `Kyynärpää 90 asteen kulmassa, lyö ${h.leadLower} koukku säkin keskelle.` },
+            { speak: `${h.rear} suora, ${h.leadLower} koukku!`, title: `${h.rear} suora + ${h.lead} koukku`, desc: `Takakäden suora avaa paikan, ${h.leadLower} koukku päättää.` }
+          ],
+          [
+            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku`, desc: `Klassinen peruskombo: suora, suora, koukku.` },
+            { speak: `${h.lead} koukku, ${h.rearLower} koukku!`, title: `${h.lead} koukku + ${h.rear} koukku`, desc: `Kaksi napakkaa koukkua säkin kylkiin.` }
+          ],
+          [
+            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku, ${h.rearLower} suora!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku + ${h.rear}`, desc: `Neljä lyöntiä sujuvasti peräkkäin.` },
+            { speak: `Kaksi suoraa ja askel sivulle!`, title: `${h.lead} + ${h.rear} + liike`, desc: `Lyö suorat, ota askel sivulle ja pidä kädet ylhäällä.` }
+          ]
+        ]
+      },
+      3: {
+        rounds: 5,
+        workSec: 120,
+        restSec: 60,
+        intervalSec: 10,
+        roundsData: [
+          [
+            { speak: `${h.lead}, ${h.rear}, ${h.lead}!`, title: `${h.lead} + ${h.rear} + ${h.lead}`, desc: `Terävät suorat ja kädet heti suojaan.` },
+            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku`, desc: `Rento rytmi, kierrä hartioita.` }
+          ],
+          [
+            { speak: `${h.lead} kohokoukku, ${h.rearLower} suora!`, title: `${h.lead} kohokoukku + ${h.rear} suora`, desc: `Nosta ${h.leadLower} kohokoukku alhaalta ylös ja lyö ${h.rearLower} suora perään.` },
+            { speak: `${h.rear} kohokoukku, ${h.leadLower} koukku!`, title: `${h.rear} kohokoukku + ${h.lead} koukku`, desc: `Kohokoukku alakautta ja sivukoukku perään.` }
+          ],
+          [
+            { speak: `${h.lead} kohokoukku, ${h.rearLower} kohokoukku!`, title: `2 × kohokoukku (${h.lead} + ${h.rear})`, desc: `Käytä jalkoja ja lantiota, lyö alhaalta ylöspäin.` },
+            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku`, desc: `Kaksi suoraa ja kova koukku kylkeen.` }
+          ],
+          [
+            { speak: `Neljä suoraa nopeasti!`, title: `4 × suora (${h.lead}-${h.rear}-${h.lead}-${h.rear})`, desc: `Kevyet, nopeat kädet – pidä hartiat rentoina.` },
+            { speak: `${h.lead} koukku, ${h.rearLower} suora, ${h.leadLower} koukku!`, title: `${h.lead} koukku + ${h.rear} suora + ${h.lead} koukku`, desc: `Voimakas kolmen lyönnin sarja.` }
+          ],
+          [
+            { speak: `Viimeinen erä! ${h.lead}, ${h.rear}, ${h.leadLower} koukku, ${h.rearLower} suora!`, title: `4 lyönnin kombo`, desc: `Anna mennä loppuun asti puhtaalla tekniikalla!` },
+            { speak: `Vapaa sarja 5 sekuntia, anna palaa!`, title: `Vapaa sarja!`, desc: `Lyö suoria ja koukkuja omaan tahtiin, hengitä ulos!` }
+          ]
+        ]
+      }
+    };
+  }
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    } catch (err) {}
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; });
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function startWorkout() {
+    const progId = document.getElementById('program-select').value;
+    currentProgram = getPrograms()[progId];
+
+    totalRounds = currentProgram.rounds;
+    roundDuration = currentProgram.workSec;
+    restDuration = currentProgram.restSec;
+    currentRound = 1;
+    phase = 'prep';
+    timeLeft = 10;
+    isPaused = false;
+    lastComboIndex = -1;
+
+    document.getElementById('setup-panel').classList.add('hidden');
+    document.getElementById('workout-panel').classList.remove('hidden');
+    document.getElementById('pause-btn').textContent = '⏸ Tauko';
+
+    requestWakeLock();
+    updateUI();
+    speak("Valmistaudu. 10 sekuntia aikaa. Laita kädet suojaan.");
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 1000);
+  }
+
+  function togglePause() {
+    isPaused = !isPaused;
+    const btn = document.getElementById('pause-btn');
+    if (isPaused) {
+      btn.textContent = '▶ Jatka';
+      window.speechSynthesis.cancel();
+    } else {
+      btn.textContent = '⏸ Tauko';
+    }
+  }
+
+  function stopWorkout() {
+    clearInterval(timerInterval);
+    window.speechSynthesis.cancel();
+    releaseWakeLock();
+    document.getElementById('workout-panel').classList.add('hidden');
+    document.getElementById('setup-panel').classList.remove('hidden');
+  }
+
+  function triggerNewCombo() {
+    const roundIdx = (currentRound - 1) % currentProgram.roundsData.length;
+    const combos = currentProgram.roundsData[roundIdx];
+    let idx = Math.floor(Math.random() * combos.length);
+    if (combos.length > 1 && idx === lastComboIndex) {
+      idx = (idx + 1) % combos.length;
+    }
+    lastComboIndex = idx;
+    const combo = combos[idx];
+
+    document.getElementById('combo-title').textContent = combo.title;
+    document.getElementById('combo-desc').textContent = combo.desc;
+    speak(combo.speak);
+  }
+
+  function tick() {
+    if (isPaused) return;
+    timeLeft--;
+
+    if (timeLeft <= 3 && timeLeft > 0) playBell('tick');
+
+    if (timeLeft <= 0) {
+      if (phase === 'prep') {
+        phase = 'work';
+        timeLeft = roundDuration;
+        playBell('start');
+        updateUI();
+        triggerNewCombo();
+        return;
+      } else if (phase === 'work') {
+        playBell('end');
+        if (currentRound >= totalRounds) {
+          phase = 'done';
+          clearInterval(timerInterval);
+          releaseWakeLock();
+          updateUI();
+          speak("Hienoa työtä! Treeni on valmis. Ota hanskat pois ja ravistele käsiä.");
+          return;
+        } else {
+          phase = 'rest';
+          timeLeft = restDuration;
+          updateUI();
+          speak(`Erä ${currentRound} valmis. Lepää minuutti ja hengitä rauhallisesti.`);
+          return;
+        }
+      } else if (phase === 'rest') {
+        currentRound++;
+        phase = 'work';
+        timeLeft = roundDuration;
+        playBell('start');
+        updateUI();
+        triggerNewCombo();
+        return;
+      }
+    }
+
+    if (phase === 'work') {
+      const elapsed = roundDuration - timeLeft;
+      if (timeLeft === 30) {
+        speak("30 sekuntia jäljellä, pidä kädet ylhäällä!");
+      } else if (elapsed > 0 && elapsed % currentProgram.intervalSec === 0 && timeLeft > 8) {
+        triggerNewCombo();
+      }
+    } else if (phase === 'rest' && timeLeft === 10) {
+      speak("10 sekuntia taukoa jäljellä. Valmistaudu seuraavaan erään.");
+    }
+
+    updateUI();
+  }
+
+  function updateUI() {
+    const box = document.getElementById('timer-box');
+    const badge = document.getElementById('status-badge');
+    const timeDisp = document.getElementById('time-display');
+    const roundInfo = document.getElementById('round-info');
+    const comboTitle = document.getElementById('combo-title');
+    const comboDesc = document.getElementById('combo-desc');
+
+    box.className = 'timer-box ' + (phase === 'done' ? 'rest' : phase);
+    timeDisp.textContent = phase === 'done' ? '00:00' : formatTime(timeLeft);
+    roundInfo.textContent = `Erä ${currentRound} / ${totalRounds}`;
+
+    if (phase === 'prep') {
+      badge.textContent = 'VALMISTAUDU';
+    } else if (phase === 'work') {
+      badge.textContent = 'LYÖ!';
+    } else if (phase === 'rest') {
+      badge.textContent = 'LEPO / TAUKO';
+      comboTitle.textContent = 'Hengitä syvään ja ravistele käsiä';
+      comboDesc.textContent = `Seuraavaksi alkaa erä ${currentRound + 1}. Pidä hartiat rentoina.`;
+    } else if (phase === 'done') {
+      badge.textContent = 'TREENI VALMIS!';
+      comboTitle.textContent = '🎉 Mahtava suoritus!';
+      comboDesc.textContent = 'Muista venytellä ranteet ja hartiat kevyesti treenin päätteeksi.';
+    }
+  }
+
+  updateQuickGuide();
+</script>
+
+</body>
+</html>
