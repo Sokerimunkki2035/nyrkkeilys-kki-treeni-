@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Säkkitreeni Valmentaja</title>
+  <title>Säkki- ja Varjonyrkkeily Valmentaja</title>
   <style>
     :root {
       --bg: #121212;
@@ -14,6 +14,7 @@
       --accent-hover: #c62828;
       --rest: #2e7d32;
       --prep: #f57c00;
+      --stop: #8e24aa;
     }
 
     * {
@@ -133,6 +134,11 @@
       background-color: rgba(245, 124, 0, 0.15);
     }
 
+    .timer-box.stop {
+      border-color: var(--stop);
+      background-color: rgba(142, 36, 170, 0.25);
+    }
+
     .status-badge {
       display: inline-block;
       padding: 6px 14px;
@@ -148,6 +154,7 @@
     .work .status-badge { background-color: var(--accent); }
     .rest .status-badge { background-color: var(--rest); }
     .prep .status-badge { background-color: var(--prep); color: #000; }
+    .stop .status-badge { background-color: var(--stop); color: #fff; }
 
     .time-display {
       font-size: 4.5rem;
@@ -229,17 +236,18 @@
 
 <div class="container">
   <header>
-    <h1>🥊 Säkkitreeni Valmentaja</h1>
-    <p>Selkokielinen ohjaaja aloittelijalle</p>
+    <h1>🥊 Nyrkkeily & Säkki Valmentaja</h1>
+    <p>Sisältää varjonyrkkeilyn, stop-harjoitukset ja lyhyet setit</p>
   </header>
 
   <div id="setup-panel" class="card settings-grid">
     <div>
-      <label>1. Valitse harjoitusohjelma</label>
+      <label>1. Valitse harjoitusmuoto</label>
       <select id="program-select">
-        <option value="1">Taso 1: Peruslyönnit haltuun (3 × 2 min)</option>
-        <option value="2">Taso 2: Koukut mukaan (4 × 2 min)</option>
-        <option value="3">Taso 3: Koko paketti & kohokoukut (5 × 2 min)</option>
+        <option value="stop30">30 s Stop-treeni (Meditaatio/Refleksi - 3 erää)</option>
+        <option value="min1">1 minuutin nopeat erät (3 erää × 1 min)</option>
+        <option value="min2">2 minuutin peruserät (3 erää × 2 min)</option>
+        <option value="min3">3 minuutin täydet erät (3 erää × 3 min)</option>
       </select>
     </div>
 
@@ -269,8 +277,8 @@
       <div id="round-info" class="round-info">Erä 1 / 3</div>
 
       <div class="combo-box">
-        <div id="combo-title" class="combo-title">Laita hanskat valmiiksi</div>
-        <div id="combo-desc" class="combo-desc">Ota tukeva haaroma-asento. Pidä ranne suorana ja kädet suojana.</div>
+        <div id="combo-title" class="combo-title">Valmistaudu treeniin</div>
+        <div id="combo-desc" class="combo-desc">Ota hyvä asento. Muista myös varjonyrkkeily ja stop-harjoitukset!</div>
       </div>
     </div>
 
@@ -281,7 +289,7 @@
   </div>
 
   <div class="card">
-    <label style="color:#fff; font-size:1rem; margin-bottom:10px;">📋 Pikamuistio käsille ja asennolle:</label>
+    <label style="color:#fff; font-size:1rem; margin-bottom:10px;">📋 Vinkit varjonyrkkeilyyn ja stop-treeniin:</label>
     <ul class="guide-list" id="quick-guide"></ul>
   </div>
 </div>
@@ -297,10 +305,12 @@
   let currentRound = 1;
   let totalRounds = 3;
   let roundDuration = 120;
-  let restDuration = 60;
+  let restDuration = 45;
   let phase = 'prep';
   let timeLeft = 10;
   let lastComboIndex = -1;
+  let isStopMode = false;
+  let stopTriggerTime = 0;
 
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -333,6 +343,14 @@
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'stop') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.4);
     }
   }
 
@@ -372,89 +390,63 @@
     const h = getHandNames();
     const list = document.getElementById('quick-guide');
     list.innerHTML = `
-      <li><strong>Perusasento:</strong> ${h.lead} jalka ja ${h.leadLower} käsi edessä, ${h.rearLower} jalka taaempana. Pidä ranne suorana osumahetkellä!</li>
-      <li><strong>Etukäden suora (${h.lead}):</strong> Nopea pisto eteenpäin ja käsi heti takaisin poskelle.</li>
-      <li><strong>Takakäden suora (${h.rear}):</strong> Kierrä takajalan päkiää ja lantiota mukaan.</li>
-      <li><strong>Koukku & kohokoukku:</strong> Matala säkki sopii täydellisesti vartalokoukkuihin ja alhaalta ylös tuleviin kohokoukkuihin.</li>
-      <li><strong>Hengitys:</strong> Puhalla ilmaa ulos joka lyönnillä (<em>"tsuh!"</em>).</li>
+      <li><strong>Varjonyrkkeily ilman säkkiä:</strong> Täydellinen kuivaharjoitteluun. Voit tehdä ilman hanskoja tai hanskojen kanssa peilin edessä.</li>
+      <li><strong>Stop-treeni (30 s / kesken erän):</strong> Kun kuulet sanan STOP, pysähdy täysin liikkumatta siihen asentoon missä olit. Tarkista, että tasapaino pitää ja kädet ovat suojana.</li>
+      <li><strong>Lyhyet setit (1 min):</strong> Loistava tapa nostaa sykettä ilman ylirasitusta.</li>
+      <li><strong>Perusasento:</strong> ${h.lead} jalka ja käsi edessä, ${h.rearLower} käsi takana suojaamassa.</li>
     `;
   }
 
   function getPrograms() {
     const h = getHandNames();
     return {
-      1: {
+      stop30: {
+        name: "30 s Stop-treeni",
         rounds: 3,
-        workSec: 120,
-        restSec: 60,
+        workSec: 30,
+        restSec: 30,
+        intervalSec: 10,
+        isStopProgram: true,
+        roundsData: [
+          [ { speak: `${h.lead} suora ja liike!`, title: `${h.lead} suora`, desc: `Varjonyrkkeilyä ${h.leadLower} suoralla.` } ]
+        ]
+      },
+      min1: {
+        name: "1 minuutin nopeat erät",
+        rounds: 3,
+        workSec: 60,
+        restSec: 30,
         intervalSec: 12,
         roundsData: [
           [
-            { speak: `${h.lead} suora!`, title: `${h.lead} suora`, desc: `Lyö nopea suora etukädellä (${h.leadLower}) ja palauta käsi heti suojaan.` },
-            { speak: `Kaksi kertaa ${h.leadLower} suora!`, title: `${h.lead} + ${h.lead} suora`, desc: `Kaksi terävää etukäden suoraa peräkkäin. Hengitä ulos!` },
-            { speak: `${h.lead} suora, ja liiku sivulle!`, title: `${h.lead} suora + liike`, desc: `Lyö ${h.leadLower} suora ja ota askel sivulle.` }
-          ],
-          [
-            { speak: `${h.lead}, ${h.rear}!`, title: `${h.lead} suora + ${h.rear} suora`, desc: `Perusyhdistelmä: ${h.leadLower} suora ja heti perään ${h.rearLower} suora.` },
-            { speak: `Pelkkä ${h.rearLower} suora, kierrä lantiota!`, title: `${h.rear} suora`, desc: `Kierrä takajalan päkiää ja työnnä ${h.rearLower} suora kohteeseen.` },
-            { speak: `${h.lead}, ${h.rear}, ja suojaus ylös!`, title: `${h.lead} + ${h.rear} + suojaus`, desc: `Kaksi suoraa ja kädet tiukasti takaisin poskille.` }
-          ],
-          [
-            { speak: `${h.lead}, ${h.rear}, ${h.lead}!`, title: `${h.lead} + ${h.rear} + ${h.lead}`, desc: `Kolme suoraa rytmillä: pam, pam, pam!` },
-            { speak: `${h.lead}, ${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.lead} + ${h.rear}`, desc: `Kaksi nopeaa etukäden suoraa ja ${h.rearLower} perään.` },
-            { speak: `Rauhallinen tempo, pidä ranne suorana!`, title: `${h.lead} + ${h.rear} (tekniikka)`, desc: `Keskity puhtaaseen osumaan ja ranteen suoruuteen.` }
+            { speak: `${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.rear} suora`, desc: `Terävät perussuorat.` },
+            { speak: `${h.lead} koukku!`, title: `${h.lead} koukku`, desc: `Koukkuharjoitus.` }
           ]
         ]
       },
-      2: {
-        rounds: 4,
+      min2: {
+        name: "2 minuutin peruserät",
+        rounds: 3,
         workSec: 120,
-        restSec: 60,
-        intervalSec: 11,
+        restSec: 45,
+        intervalSec: 15,
         roundsData: [
           [
-            { speak: `${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.rear} suora`, desc: `Rento aloitus: ${h.leadLower} ja ${h.rearLower} suora.` },
-            { speak: `${h.lead}, ${h.lead}, ${h.rear}!`, title: `${h.lead} + ${h.lead} + ${h.rear}`, desc: `Kaksi etukäden suoraa ja takakäden suora.` }
-          ],
-          [
-            { speak: `${h.lead} koukku keskelle!`, title: `${h.lead} koukku`, desc: `Kyynärpää 90 asteen kulmassa, lyö ${h.leadLower} koukku säkin keskelle.` },
-            { speak: `${h.rear} suora, ${h.leadLower} koukku!`, title: `${h.rear} suora + ${h.lead} koukku`, desc: `Takakäden suora avaa paikan, ${h.leadLower} koukku päättää.` }
-          ],
-          [
-            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku`, desc: `Klassinen peruskombo: suora, suora, koukku.` },
-            { speak: `${h.lead} koukku, ${h.rearLower} koukku!`, title: `${h.lead} koukku + ${h.rear} koukku`, desc: `Kaksi napakkaa koukkua säkin kylkiin.` }
-          ],
-          [
-            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku, ${h.rearLower} suora!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku + ${h.rear}`, desc: `Neljä lyöntiä sujuvasti peräkkäin.` },
-            { speak: `Kaksi suoraa ja askel sivulle!`, title: `${h.lead} + ${h.rear} + liike`, desc: `Lyö suorat, ota askel sivulle ja pidä kädet ylhäällä.` }
+            { speak: `${h.lead}, ${h.rear}, ${h.lead}!`, title: `${h.lead} + ${h.rear} + ${h.lead}`, desc: `Kolme lyöntiä.` },
+            { speak: `${h.lead} koukku, ${h.rearLower} suora!`, title: `${h.lead} koukku + ${h.rear} suora`, desc: `Koukku ja suora perään.` }
           ]
         ]
       },
-      3: {
-        rounds: 5,
-        workSec: 120,
+      min3: {
+        name: "3 minuutin täydet erät",
+        rounds: 3,
+        workSec: 180,
         restSec: 60,
-        intervalSec: 10,
+        intervalSec: 20,
         roundsData: [
           [
-            { speak: `${h.lead}, ${h.rear}, ${h.lead}!`, title: `${h.lead} + ${h.rear} + ${h.lead}`, desc: `Terävät suorat ja kädet heti suojaan.` },
-            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku`, desc: `Rento rytmi, kierrä hartioita.` }
-          ],
-          [
-            { speak: `${h.lead} kohokoukku, ${h.rearLower} suora!`, title: `${h.lead} kohokoukku + ${h.rear} suora`, desc: `Nosta ${h.leadLower} kohokoukku alhaalta ylös ja lyö ${h.rearLower} suora perään.` },
-            { speak: `${h.rear} kohokoukku, ${h.leadLower} koukku!`, title: `${h.rear} kohokoukku + ${h.lead} koukku`, desc: `Kohokoukku alakautta ja sivukoukku perään.` }
-          ],
-          [
-            { speak: `${h.lead} kohokoukku, ${h.rearLower} kohokoukku!`, title: `2 × kohokoukku (${h.lead} + ${h.rear})`, desc: `Käytä jalkoja ja lantiota, lyö alhaalta ylöspäin.` },
-            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku!`, title: `${h.lead} + ${h.rear} + ${h.lead} koukku`, desc: `Kaksi suoraa ja kova koukku kylkeen.` }
-          ],
-          [
-            { speak: `Neljä suoraa nopeasti!`, title: `4 × suora (${h.lead}-${h.rear}-${h.lead}-${h.rear})`, desc: `Kevyet, nopeat kädet – pidä hartiat rentoina.` },
-            { speak: `${h.lead} koukku, ${h.rearLower} suora, ${h.leadLower} koukku!`, title: `${h.lead} koukku + ${h.rear} suora + ${h.lead} koukku`, desc: `Voimakas kolmen lyönnin sarja.` }
-          ],
-          [
-            { speak: `Viimeinen erä! ${h.lead}, ${h.rear}, ${h.leadLower} koukku, ${h.rearLower} suora!`, title: `4 lyönnin kombo`, desc: `Anna mennä loppuun asti puhtaalla tekniikalla!` },
-            { speak: `Vapaa sarja 5 sekuntia, anna palaa!`, title: `Vapaa sarja!`, desc: `Lyö suoria ja koukkuja omaan tahtiin, hengitä ulos!` }
+            { speak: `${h.lead}, ${h.rear}, ${h.leadLower} koukku, ${h.rearLower} suora!`, title: `4 lyönnin kombo`, desc: `Pitkä sarja hyvällä hengityksellä.` },
+            { speak: `Vapaa varjonyrkkeily / säkki!`, title: `Vapaa liike`, desc: `Käytä kaikkia opittuja lyöntejä.` }
           ]
         ]
       }
@@ -488,6 +480,7 @@
     phase = 'prep';
     timeLeft = 10;
     isPaused = false;
+    isStopMode = false;
     lastComboIndex = -1;
 
     document.getElementById('setup-panel').classList.add('hidden');
@@ -496,7 +489,7 @@
 
     requestWakeLock();
     updateUI();
-    speak("Valmistaudu. 10 sekuntia aikaa. Laita kädet suojaan.");
+    speak("Valmistaudu. 10 sekuntia aikaa.");
 
     clearInterval(timerInterval);
     timerInterval = setInterval(tick, 1000);
@@ -522,8 +515,7 @@
   }
 
   function triggerNewCombo() {
-    const roundIdx = (currentRound - 1) % currentProgram.roundsData.length;
-    const combos = currentProgram.roundsData[roundIdx];
+    const combos = currentProgram.roundsData[0];
     let idx = Math.floor(Math.random() * combos.length);
     if (combos.length > 1 && idx === lastComboIndex) {
       idx = (idx + 1) % combos.length;
@@ -540,12 +532,39 @@
     if (isPaused) return;
     timeLeft--;
 
-    if (timeLeft <= 3 && timeLeft > 0) playBell('tick');
+    if (timeLeft <= 3 && timeLeft > 0 && !isStopMode) playBell('tick');
+
+    // Stop-treenin satunnainen stop-piikki erän aikana (jos erä kestää vähintään 30s)
+    if (phase === 'work' && roundDuration >= 30) {
+      const elapsed = roundDuration - timeLeft;
+      // Arvotaan stop-hetki (esim. kun puolet erästä on kulunut tai vartti jäljellä)
+      if (!isStopMode && (elapsed === Math.floor(roundDuration / 2) || elapsed === Math.floor(roundDuration * 0.75))) {
+        isStopMode = true;
+        stopTriggerTime = 5; // 5 sekuntia pysähdystä
+        playBell('stop');
+        speak("Stop!");
+        document.getElementById('combo-title').textContent = "🛑 STOP! Pysy paikallasi!";
+        document.getElementById('combo-desc').textContent = "Älä liiku. Tarkista että asento pitää ja kädet ovat suojana.";
+        return;
+      }
+
+      if (isStopMode) {
+        stopTriggerTime--;
+        if (stopTriggerTime <= 0) {
+          isStopMode = false;
+          speak("Jatka!");
+          triggerNewCombo();
+        }
+        updateUI();
+        return;
+      }
+    }
 
     if (timeLeft <= 0) {
       if (phase === 'prep') {
         phase = 'work';
         timeLeft = roundDuration;
+        isStopMode = false;
         playBell('start');
         updateUI();
         triggerNewCombo();
@@ -557,19 +576,21 @@
           clearInterval(timerInterval);
           releaseWakeLock();
           updateUI();
-          speak("Hienoa työtä! Treeni on valmis. Ota hanskat pois ja ravistele käsiä.");
+          speak("Hienoa työtä! Treeni valmis.");
           return;
         } else {
           phase = 'rest';
           timeLeft = restDuration;
+          isStopMode = false;
           updateUI();
-          speak(`Erä ${currentRound} valmis. Lepää minuutti ja hengitä rauhallisesti.`);
+          speak(`Erä ${currentRound} valmis. Lepää ja hengitä.`);
           return;
         }
       } else if (phase === 'rest') {
         currentRound++;
         phase = 'work';
         timeLeft = roundDuration;
+        isStopMode = false;
         playBell('start');
         updateUI();
         triggerNewCombo();
@@ -577,15 +598,11 @@
       }
     }
 
-    if (phase === 'work') {
+    if (phase === 'work' && !isStopMode) {
       const elapsed = roundDuration - timeLeft;
-      if (timeLeft === 30) {
-        speak("30 sekuntia jäljellä, pidä kädet ylhäällä!");
-      } else if (elapsed > 0 && elapsed % currentProgram.intervalSec === 0 && timeLeft > 8) {
+      if (elapsed > 0 && elapsed % currentProgram.intervalSec === 0 && timeLeft > 5) {
         triggerNewCombo();
       }
-    } else if (phase === 'rest' && timeLeft === 10) {
-      speak("10 sekuntia taukoa jäljellä. Valmistaudu seuraavaan erään.");
     }
 
     updateUI();
@@ -596,25 +613,34 @@
     const badge = document.getElementById('status-badge');
     const timeDisp = document.getElementById('time-display');
     const roundInfo = document.getElementById('round-info');
-    const comboTitle = document.getElementById('combo-title');
-    const comboDesc = document.getElementById('combo-desc');
+
+    if (isStopMode) {
+      box.className = 'timer-box stop';
+      badge.textContent = '🛑 STOP!';
+      timeDisp.textContent = stopTriggerTime;
+      roundInfo.textContent = `Erä ${currentRound} / ${totalRounds}`;
+      return;
+    }
 
     box.className = 'timer-box ' + (phase === 'done' ? 'rest' : phase);
     timeDisp.textContent = phase === 'done' ? '00:00' : formatTime(timeLeft);
     roundInfo.textContent = `Erä ${currentRound} / ${totalRounds}`;
 
+    const comboTitle = document.getElementById('combo-title');
+    const comboDesc = document.getElementById('combo-desc');
+
     if (phase === 'prep') {
       badge.textContent = 'VALMISTAUDU';
     } else if (phase === 'work') {
-      badge.textContent = 'LYÖ!';
+      badge.textContent = 'LYÖ / LIIKU!';
     } else if (phase === 'rest') {
       badge.textContent = 'LEPO / TAUKO';
-      comboTitle.textContent = 'Hengitä syvään ja ravistele käsiä';
-      comboDesc.textContent = `Seuraavaksi alkaa erä ${currentRound + 1}. Pidä hartiat rentoina.`;
+      comboTitle.textContent = 'Hengitä rauhallisesti';
+      comboDesc.textContent = `Seuraavaksi alkaa erä ${currentRound + 1}.`;
     } else if (phase === 'done') {
-      badge.textContent = 'TREENI VALMIS!';
+      badge.textContent = 'VALMIS!';
       comboTitle.textContent = '🎉 Mahtava suoritus!';
-      comboDesc.textContent = 'Muista venytellä ranteet ja hartiat kevyesti treenin päätteeksi.';
+      comboDesc.textContent = 'Ravistele käsiä ja ota rennosti.';
     }
   }
 
